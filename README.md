@@ -65,14 +65,16 @@ or, equivalently, `python3 -m http.server 8000`.
    table for new users. `Ctrl+Z` undoes the last committed action from
    anywhere.
 
-4. **Read the court visualizer.** A single 3×3 target-zone diagram plots
-   the last several located actions, drawing a trajectory arrow for any
-   `from>to` action. Because a zone's number only reads correctly from
-   its own team's baseline, the **Invert court** toggle rotates the
-   diagram 180° so the zone numbers are pre-filled correctly for
-   whichever side's action you're currently coding, instead of asking
-   you to mentally mirror the grid when plotting the opposing team's
-   serves/attacks landing across the net.
+4. **Read the court visualizer.** One diagram shows both teams' courts
+   at once, net in the middle — Away's zone grid above it (pre-rotated
+   180° for their own baseline), Home's below (normal orientation) —
+   so neither team's numbers ever need mentally mirroring. Serve and
+   Attack cross the net: their target zone is drawn on the *opposing*
+   team's half (using that team's own numbering) and always gets an
+   arrow, from an explicit `from` zone if one was typed or otherwise
+   from a generic point at the net on the attacking side. Every other
+   skill (reception, set, block, dig, freeball) stays within the acting
+   team's own half.
 5. **Read the live stats table and match report.** Per-player and
    per-team rows break down attempts and evaluation counts for every
    skill, with standard efficiency metrics (kill %, error %, efficiency,

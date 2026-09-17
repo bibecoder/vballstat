@@ -264,8 +264,6 @@ input[type="text"], input[type="number"] {
 
 /* ---------- court visualizer panel ---------- */
 .viz-caption { font-weight: 400; text-transform: none; color: var(--text-dim); font-size: 11px; }
-.invert-toggle { font-size: 11px; padding: 4px 8px; }
-.invert-toggle.active { border-color: var(--accent); color: var(--accent); }
 .court-svg {
   width: 100%;
   max-width: 320px;

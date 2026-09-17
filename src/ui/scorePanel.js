@@ -1,29 +1,11 @@
-// Manual scoreboard for on-screen context while coding. This prototype
-// does not infer points from rally outcomes automatically (that needs a
-// full rotation/rally-state engine); the analyst bumps it by hand, same
-// as a secondary scoreboard clicker alongside DataVolley in practice.
+// Renders the shared Scoreboard model. Points can come from the manual
+// +/- buttons here, or automatically from a parsed rally line's
+// "Point H" / "Point A" (see rallyPanel.js) — both go through the same
+// Scoreboard instance so the two stay in sync.
 
-const STORAGE_KEY = 'vballstat.score.v1';
-
-export function mountScorePanel(root, { roster }) {
-  let score = load();
-
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : { home: 0, away: 0, set: 1 };
-    } catch (e) {
-      return { home: 0, away: 0, set: 1 };
-    }
-  }
-
-  function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(score));
-    } catch (e) {}
-  }
-
+export function mountScorePanel(root, { roster, scoreboard }) {
   function render() {
+    const score = scoreboard.score;
     root.innerHTML = `
       <div class="panel-header">Scoreboard <span class="set-label">Set ${score.set}</span></div>
       <div class="score-row">
@@ -49,29 +31,18 @@ export function mountScorePanel(root, { roster }) {
         <button data-action="reset-score">Reset match</button>
       </div>
     `;
-    root.querySelector('[data-action="home-plus"]').addEventListener('click', () => bump('home', 1));
-    root.querySelector('[data-action="home-minus"]').addEventListener('click', () => bump('home', -1));
-    root.querySelector('[data-action="away-plus"]').addEventListener('click', () => bump('away', 1));
-    root.querySelector('[data-action="away-minus"]').addEventListener('click', () => bump('away', -1));
-    root.querySelector('[data-action="new-set"]').addEventListener('click', () => {
-      score = { home: 0, away: 0, set: score.set + 1 };
-      save();
-      render();
-    });
+    root.querySelector('[data-action="home-plus"]').addEventListener('click', () => scoreboard.bump('home', 1));
+    root.querySelector('[data-action="home-minus"]').addEventListener('click', () => scoreboard.bump('home', -1));
+    root.querySelector('[data-action="away-plus"]').addEventListener('click', () => scoreboard.bump('away', 1));
+    root.querySelector('[data-action="away-minus"]').addEventListener('click', () => scoreboard.bump('away', -1));
+    root.querySelector('[data-action="new-set"]').addEventListener('click', () => scoreboard.newSet());
     root.querySelector('[data-action="reset-score"]').addEventListener('click', () => {
-      score = { home: 0, away: 0, set: 1 };
-      save();
-      render();
+      if (confirm('Reset the scoreboard? This does not touch the action log.')) scoreboard.reset();
     });
-  }
-
-  function bump(team, delta) {
-    score[team] = Math.max(0, score[team] + delta);
-    save();
-    render();
   }
 
   roster.onChange(render);
+  scoreboard.onChange(render);
   render();
 }
 

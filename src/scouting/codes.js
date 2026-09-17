@@ -44,3 +44,39 @@ export function evalLabel(skillCode, evalChar) {
 export function skillName(skillCode) {
   return SKILLS[skillCode] ? SKILLS[skillCode].name : skillCode;
 }
+
+// Word vocabulary for the single-line rally notation (see rallyParser.js),
+// e.g. "H13ServeLocation5Positive". Longest synonym first so greedy
+// alternation in the parser regex prefers "Reception" over "Receive".
+export const SKILL_WORDS = {
+  Serve: 'S',
+  Reception: 'R',
+  Receive: 'R',
+  Set: 'E',
+  Attack: 'A',
+  Spike: 'A',
+  Block: 'B',
+  Dig: 'D',
+  Freeball: 'F',
+  FreeBall: 'F',
+};
+
+export const EVAL_WORDS = {
+  Perfect: '#',
+  Positive: '+',
+  Exclamation: '!',
+  OK: '!',
+  Negative: '-',
+  Poor: '/',
+  Error: '=',
+};
+
+// Standard DataVolley 3x3 target-zone grid (net at the top):
+//   4 3 2
+//   7 8 9
+//   5 6 1
+export const COURT_ZONES = [
+  [4, 3, 2],
+  [7, 8, 9],
+  [5, 6, 1],
+];

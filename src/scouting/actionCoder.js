@@ -144,6 +144,7 @@ export class ActionCoder {
       skill: skillCode,
       skillName: skillName(skillCode),
       evaluation,
+      zone: null,
       code: `${this.team === 'home' ? 'H' : 'A'}${number}${skillCode}${evaluation}`,
     };
 

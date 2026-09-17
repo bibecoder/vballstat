@@ -52,8 +52,8 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
       ${gridLines()}
       <g class="court-zone-cells">${zoneCells()}</g>
       <g class="court-zone-labels"></g>
-      <g class="court-trails"></g>
-      <g class="court-markers"></g>
+      <g class="court-trails" pointer-events="none"></g>
+      <g class="court-markers" pointer-events="none"></g>
     </svg>
     <div class="viz-legend"></div>
     <div class="viz-empty">Net at top. Click a cell to insert its zone into the rally line.</div>

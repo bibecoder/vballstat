@@ -1,0 +1,10 @@
+{
+  "name": "vballstat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live volleyball scouting prototype: video feed + keyboard coding -> real-time stats table (DataVolley/VolleyStation-style workflow).",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

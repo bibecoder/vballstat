@@ -7,8 +7,8 @@ import { RALLY_EXAMPLE } from '../scouting/rallyParser.js';
 export function mountRallyPanel(root, { rallyCommitter, roster }) {
   root.innerHTML = `
     <div class="panel-header">Rally Line Input</div>
-    <p class="rally-hint">Type the whole point, then press <kbd>Enter</kbd>. Actions can be separated by
-      <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code> to award the point.</p>
+    <p class="rally-hint">Same codes as Live Coding, strung together: <code>Team</code><code>Player#</code><code>Skill</code><code>[Zone]</code><code>Eval</code>
+      — e.g. <code>H13S5+</code>. Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code> to award the point.</p>
     <input type="text" class="rally-input" placeholder="${RALLY_EXAMPLE}" autocomplete="off" spellcheck="false" />
     <div class="rally-preview" data-empty="Nothing parsed yet — start typing…"></div>
     <div class="rally-errors"></div>

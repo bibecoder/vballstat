@@ -3,15 +3,14 @@
 A browser-based prototype of a **computer-facing volleyball statistical
 analysis tool**, modeled on the live-scouting workflow used by
 **DataVolley 4** and **VolleyStation**: an analyst watches a live video
-feed of the match and types short keyboard codes for every player action
-as it happens. Each code is instantly parsed, timestamped against the
-video clock, and folded into a live-updating stats table — no batch
-processing, no post-game entry.
+feed of the match and types a short code for each rally as it happens.
+Each code is instantly parsed, timestamped against the video clock, and
+folded into a live-updating stats table — no batch processing, no
+post-game entry.
 
 This is a functional prototype focused on the *scouting loop* (video →
-keystroke → structured action → live stats), not a full production
-system. It runs entirely in the browser with no backend and no build
-step.
+code → structured action → live stats), not a full production system.
+It runs entirely in the browser with no backend and no build step.
 
 ## Running it
 
@@ -35,44 +34,68 @@ or, equivalently, `python3 -m http.server 8000`.
      match clock".
    - **Video file** — load a local recording and code it exactly like a
      live feed, using the video's own playback clock as the sync source.
-3. **Code the action while watching.** With focus anywhere outside a
-   text field, type the sequence:
+3. **Type the rally in Rally Line Input**, the sole manual-entry method,
+   sitting directly under the play-by-play log. Type the whole point as
+   one line, using the same compact code for every action:
 
-   `<team> <player#> <skill> <evaluation>`
+   `<Team><Player#><Skill>[From>]Zone[Subzone]<Evaluation>`
 
    - Team: `H` (Home) or `A` (Away)
    - Player number: digits (e.g. `7`)
    - Skill: `S` Serve · `R` Reception · `E` Set · `A` Attack · `B` Block ·
      `D` Dig · `F` Freeball
+   - Zone (optional): a target zone `1`-`9` on the standard DataVolley
+     grid, an optional quadrant letter `a`-`d` for extra precision, and
+     an optional `<origin>>` prefix for a full from→to trajectory (e.g.
+     `3>5a` = served from zone 3 to zone 5, near-left quadrant)
    - Evaluation: `#` Perfect `+` Positive `!` Exclamation/OK `-` Negative
      `/` Poor `=` Error
 
-   Example: `h7a#` = Home, player #7, Attack, Perfect (kill). The moment
-   the evaluation key is pressed the action commits, is stamped with the
-   current video time, and the stats table updates immediately.
+   Separate actions with `;` or spaces, and close the rally with
+   `Point H` / `Point A` to award the point. Example:
+   `H13S3>5a+; A27R+; H9E4#; H7A#; Point H`. Press `Enter` (or
+   "Commit rally") to commit the whole line at once, stamped with the
+   current video time.
 
-   `Backspace` steps back one stage, `Esc` clears the current entry,
-   `Ctrl+Z` undoes the last committed action. Players can also be picked
-   by clicking their roster row instead of typing the number.
+   **Click to assist typing** instead of typing every character:
+   clicking a roster player inserts their `H13`-style token at the
+   cursor; clicking a zone on the Court Visualizer inserts that zone
+   (and its quadrant, based on where in the cell you click). A collapsed
+   "Show code reference" panel under the input recaps the full code
+   table for new users. `Ctrl+Z` undoes the last committed action from
+   anywhere.
 
-4. **Read the live stats table.** Per-player and per-team rows break
-   down attempts and evaluation counts for every skill, with the
-   standard efficiency metrics (kill %, error %, efficiency, positive %)
-   recomputed after every keystroke.
-5. **Export.** The play-by-play log (with true video timestamps) and the
-   aggregated stats table can both be exported to CSV/JSON for later
-   analysis, matching how DataVolley exports scouting files.
+4. **Read the court visualizer.** A single 3×3 target-zone diagram plots
+   the last several located actions, drawing a trajectory arrow for any
+   `from>to` action. Because a zone's number only reads correctly from
+   its own team's baseline, the **Invert court** toggle rotates the
+   diagram 180° so the zone numbers are pre-filled correctly for
+   whichever side's action you're currently coding, instead of asking
+   you to mentally mirror the grid when plotting the opposing team's
+   serves/attacks landing across the net.
+5. **Read the live stats table and match report.** Per-player and
+   per-team rows break down attempts and evaluation counts for every
+   skill, with standard efficiency metrics (kill %, error %, efficiency,
+   positive %) recomputed after every commit. The Match Report panel
+   adds a readable summary: score, per-team skill totals, top performer
+   per skill, and error leaders.
+6. **Export / import.** The play-by-play log (with true video
+   timestamps) exports to CSV, JSON, or a DataVolley-structured DVW file
+   (real section names, our own simplified row encoding — see
+   `src/scouting/dvwFormat.js` for the fidelity caveat); DVW files this
+   app exported can be re-imported to restore the full session.
 
 ## Architecture
 
 ```
-index.html            shell + panel layout
-src/main.js            wires all modules together
-src/roster/            team & player roster, localStorage persistence
-src/video/             webcam / video-file source, unified clock API
-src/scouting/          keyboard state machine -> structured Action, action log + undo
-src/stats/             skill formulas + live aggregation engine
-src/ui/                DOM rendering for each panel (no framework)
+index.html              shell + panel layout
+src/main.js              wires all modules together
+src/roster/               team & player roster, localStorage persistence
+src/video/                 webcam / video-file source, unified clock API
+src/scouting/               rally-line parser/committer, action log + undo,
+                             scoreboard, DVW export/import
+src/stats/                   skill formulas + live aggregation engine
+src/ui/                       DOM rendering for each panel (no framework)
 ```
 
 The important architectural idea, carried over directly from DataVolley
@@ -80,7 +103,7 @@ scouting practice: **the video clock is the single source of truth for
 timing**. Every committed action is stamped with `video.currentTime()`
 (webcam elapsed time, or the loaded video file's `currentTime`), not
 `Date.now()`, so the play-by-play log stays frame-accurate against the
-footage regardless of when the scout actually pressed the key.
+footage regardless of when the scout actually typed the line.
 
 ## Not in scope for this prototype
 
@@ -88,4 +111,6 @@ footage regardless of when the scout actually pressed the key.
   context)
 - Computer-vision player/ball tracking — actions are analyst-entered, as
   in real DataVolley/VolleyStation usage
+- Byte-exact DataVolley `.dvw` compatibility, per-zone "distribution"
+  heatmap grids, and timeout/substitution tracking
 - Multi-set match/league management, video-clip cutting, and PDF reports

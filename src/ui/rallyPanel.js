@@ -1,14 +1,19 @@
-import { evalLabel, formatZoneSegment } from '../scouting/codes.js';
+import { SKILLS, SKILL_ORDER, EVALUATIONS, evalLabel, formatZoneSegment } from '../scouting/codes.js';
 import { RALLY_EXAMPLE } from '../scouting/rallyParser.js';
 
-// The "typebox" workflow: type the whole rally as one line while
-// replaying it from memory (or pausing the video), see it parse live as
-// chips, then commit the whole point in one shot.
+// The sole manual text-entry workflow now that the keystroke-by-keystroke
+// buffer is gone: type the whole rally as one line while replaying it
+// from memory (or pausing the video), see it parse live as chips, then
+// commit the whole point in one shot. Roster clicks and court clicks
+// (see rosterPanel.js / visualizerPanel.js) assist by inserting a token
+// at the cursor via the returned insertAtCursor API, rather than filling
+// a separate buffer.
 export function mountRallyPanel(root, { rallyCommitter, roster }) {
   root.innerHTML = `
     <div class="panel-header">Rally Line Input</div>
-    <p class="rally-hint">Same codes as Live Coding, strung together: <code>Team</code><code>Player#</code><code>Skill</code><code>[From&gt;]Zone[Subzone]</code><code>Eval</code>
-      — e.g. <code>H13S3&gt;5a+</code> (serve from zone 3 to zone 5, near-left quadrant). Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code>.</p>
+    <p class="rally-hint"><code>Team</code><code>Player#</code><code>Skill</code><code>[From&gt;]Zone[Subzone]</code><code>Eval</code>
+      — e.g. <code>H13S3&gt;5a+</code> (serve from zone 3 to zone 5, near-left quadrant). Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code>.
+      Click a roster player or a court zone to insert it at the cursor.</p>
     <input type="text" class="rally-input" placeholder="${RALLY_EXAMPLE}" autocomplete="off" spellcheck="false" />
     <div class="rally-preview" data-empty="Nothing parsed yet — start typing…"></div>
     <div class="rally-errors"></div>
@@ -16,6 +21,36 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
       <button class="rally-example">Fill example</button>
       <button class="rally-commit btn-primary">Commit rally</button>
     </div>
+
+    <details class="legend-details">
+      <summary>Show code reference</summary>
+      <div class="legend">
+        <div class="legend-group">
+          <strong>Team</strong>
+          <span><kbd>H</kbd> Home</span>
+          <span><kbd>A</kbd> Away</span>
+        </div>
+        <div class="legend-group">
+          <strong>Skill</strong>
+          ${SKILL_ORDER.map((s) => `<span><kbd>${s}</kbd> ${SKILLS[s].name}</span>`).join('')}
+        </div>
+        <div class="legend-group">
+          <strong>Zone (optional)</strong>
+          <span><kbd>1-9</kbd> target zone</span>
+          <span><kbd>a-d</kbd> quadrant</span>
+          <span><kbd>&gt;</kbd> from&gt;to trajectory</span>
+        </div>
+        <div class="legend-group">
+          <strong>Evaluation</strong>
+          ${EVALUATIONS.map((e) => `<span><kbd>${e}</kbd> ${evalLabel('*', e) || e}</span>`).join('')}
+        </div>
+        <div class="legend-group">
+          <strong>Control</strong>
+          <span><kbd>Enter</kbd> commit rally</span>
+          <span><kbd>Ctrl+Z</kbd> undo last</span>
+        </div>
+      </div>
+    </details>
   `;
 
   const input = root.querySelector('.rally-input');
@@ -80,8 +115,22 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
     }
   }
 
+  // Inserts text at the current caret position (replacing any selection),
+  // used by roster-row clicks ("H13") and court-zone clicks ("5a").
+  function insertAtCursor(text) {
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    input.value = input.value.slice(0, start) + text + input.value.slice(end);
+    const caret = start + text.length;
+    input.focus();
+    input.setSelectionRange(caret, caret);
+    renderPreview();
+  }
+
   roster.onChange(renderPreview);
   renderPreview();
+
+  return { insertAtCursor };
 }
 
 function evalClass(char) {

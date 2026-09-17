@@ -1,4 +1,4 @@
-export function mountRosterPanel(root, { roster, actionCoder }) {
+export function mountRosterPanel(root, { roster, rallyPanel }) {
   function renderTeam(teamKey) {
     const players = roster.players(teamKey);
     const rows = players
@@ -45,7 +45,7 @@ export function mountRosterPanel(root, { roster, actionCoder }) {
       const number = Number(row.dataset.number);
 
       row.querySelector('.roster-number').addEventListener('click', () => {
-        actionCoder.selectPlayer(team, number);
+        rallyPanel.insertAtCursor(`${team === 'home' ? 'H' : 'A'}${number}`);
       });
 
       const nameEl = row.querySelector('[data-field="name"]');

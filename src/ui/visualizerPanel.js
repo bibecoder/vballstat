@@ -1,13 +1,24 @@
 import { COURT_ZONES, SKILLS, SKILL_ORDER, evalLabel } from '../scouting/codes.js';
 
 // Court-zone visualizer: plots the location of recent scouted actions
-// (from either the keyboard coder or a committed rally line) on the
-// standard DataVolley 3x3 target grid, with quadrant-precise subzone
-// placement and a trajectory arrow when an action carries a from>to
-// zone pair. The 9 zone cells are also clickable — click sets the
-// in-progress Live Coding action's zone (and subzone, from where in
-// the cell you click), the same "point at where it landed" workflow
+// (however they were entered — Rally Line Input, assisted by a roster
+// or court click) on the standard DataVolley 3x3 target grid, with
+// quadrant-precise subzone placement and a trajectory arrow when an
+// action carries a from>to zone pair.
+//
+// The 9 zone cells are also clickable — click inserts that zone (and
+// its quadrant, from where in the cell you click) into the Rally Line
+// textbox at the cursor, the same "point at where it landed" workflow
 // openvolley's ovscout2 uses on a video frame, applied to this diagram.
+//
+// A single court diagram can only show one team's zone numbering the
+// right way up at a time — 1 is always "back right *from that team's
+// own baseline*". Reading the opposing team's serve/attack zones off
+// the same diagram means mentally mirroring it, which is slow and
+// error-prone while coding live. The Invert toggle instead redraws the
+// grid rotated 180° (so the numbers you read are pre-filled correctly
+// for whichever side you're currently coding) rather than asking the
+// scout to do that flip in their head.
 const SKILL_COLOR = {
   S: '#4fb3ff', // serve
   E: '#c084fc', // set
@@ -20,9 +31,16 @@ const SKILL_COLOR = {
 
 const TRAIL_LENGTH = 8;
 
-export function mountVisualizerPanel(root, { actionLog, actionCoder, roster }) {
+function rotate180(grid) {
+  return grid.slice().reverse().map((row) => row.slice().reverse());
+}
+
+export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
   root.innerHTML = `
-    <div class="panel-header">Court Visualizer <span class="viz-caption">recent located actions — click a zone to set it</span></div>
+    <div class="panel-header">
+      <span>Court Visualizer <span class="viz-caption">click a zone to insert it</span></span>
+      <button class="invert-toggle" type="button" aria-pressed="false">⇅ Invert court</button>
+    </div>
     <svg class="court-svg" viewBox="0 0 300 300" role="img" aria-label="Volleyball court target-zone diagram">
       <defs>
         <marker id="viz-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -33,35 +51,65 @@ export function mountVisualizerPanel(root, { actionLog, actionCoder, roster }) {
       <line x1="2" y1="2" x2="298" y2="2" stroke="var(--accent)" stroke-width="4"/>
       ${gridLines()}
       <g class="court-zone-cells">${zoneCells()}</g>
-      ${zoneLabels()}
+      <g class="court-zone-labels"></g>
       <g class="court-trails"></g>
       <g class="court-markers"></g>
     </svg>
     <div class="viz-legend"></div>
-    <div class="viz-empty">Net at top. Type a zone digit (1-9) while coding, or click a cell above, to see it plotted.</div>
+    <div class="viz-empty">Net at top. Click a cell to insert its zone into the rally line.</div>
   `;
 
+  const invertBtn = root.querySelector('.invert-toggle');
+  const zoneLabelsLayer = root.querySelector('.court-zone-labels');
   const markersLayer = root.querySelector('.court-markers');
   const trailsLayer = root.querySelector('.court-trails');
   const legend = root.querySelector('.viz-legend');
   const empty = root.querySelector('.viz-empty');
 
-  // --- zone cell click handling: sets the in-progress keyboard action's zone ---
-  root.querySelectorAll('.zone-cell').forEach((cell) => {
-    cell.addEventListener('click', (e) => {
-      const zone = Number(cell.dataset.zone);
-      const rect = cell.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width;
-      const py = (e.clientY - rect.top) / rect.height;
-      // Quadrant of the clicked cell: a=near-left, b=near-right, c=far-left, d=far-right.
-      const subzone = py < 0.5 ? (px < 0.5 ? 'a' : 'b') : (px < 0.5 ? 'c' : 'd');
-      actionCoder.setZone(zone, subzone);
+  let inverted = false;
+  function currentZones() {
+    return inverted ? rotate180(COURT_ZONES) : COURT_ZONES;
+  }
+
+  function renderZoneLabels() {
+    const grid = currentZones();
+    let s = '';
+    grid.forEach((row, r) => {
+      row.forEach((zone, c) => {
+        s += `<text x="${c * 100 + 8}" y="${r * 100 + 20}" font-size="13" fill="var(--text-dim)" font-family="Consolas, monospace" pointer-events="none">${zone}</text>`;
+      });
     });
+    zoneLabelsLayer.innerHTML = s;
+  }
+
+  invertBtn.addEventListener('click', () => {
+    inverted = !inverted;
+    invertBtn.setAttribute('aria-pressed', String(inverted));
+    invertBtn.classList.toggle('active', inverted);
+    renderZoneLabels();
+    render();
+  });
+
+  // --- zone cell click handling: inserts <zone><subzone> at the Rally Line cursor ---
+  // Cells carry fixed row/col; the zone NUMBER shown/inserted is looked up
+  // through currentZones() so it always matches what's currently drawn.
+  root.querySelector('.court-zone-cells').addEventListener('click', (e) => {
+    const cell = e.target.closest('.zone-cell');
+    if (!cell) return;
+    const row = Number(cell.dataset.row), col = Number(cell.dataset.col);
+    const zone = currentZones()[row][col];
+    const rect = cell.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    // Quadrant of the clicked cell: a=near-left, b=near-right, c=far-left, d=far-right.
+    const subzone = py < 0.5 ? (px < 0.5 ? 'a' : 'b') : (px < 0.5 ? 'c' : 'd');
+    rallyPanel.insertAtCursor(String(zone) + subzone);
   });
 
   function zoneCenter(zone) {
+    const grid = currentZones();
     for (let r = 0; r < 3; r++) {
-      const c = COURT_ZONES[r].indexOf(zone);
+      const c = grid[r].indexOf(zone);
       if (c !== -1) return { x: c * 100 + 50, y: r * 100 + 50 };
     }
     return null;
@@ -121,6 +169,7 @@ export function mountVisualizerPanel(root, { actionLog, actionCoder, roster }) {
   }
 
   actionLog.onChange(render);
+  renderZoneLabels();
   render();
 }
 
@@ -133,23 +182,16 @@ function gridLines() {
   return s;
 }
 
+// Cells carry fixed physical row/col (never change); the zone number
+// they represent depends on the current orientation, so it's looked up
+// at click/render time rather than baked in here.
 function zoneCells() {
   let s = '';
-  COURT_ZONES.forEach((row, r) => {
-    row.forEach((zone, c) => {
-      s += `<rect class="zone-cell" data-zone="${zone}" x="${c * 100}" y="${r * 100}" width="100" height="100" fill="transparent" style="cursor:pointer"><title>Click to set zone ${zone}</title></rect>`;
-    });
-  });
-  return s;
-}
-
-function zoneLabels() {
-  let s = '';
-  COURT_ZONES.forEach((row, r) => {
-    row.forEach((zone, c) => {
-      s += `<text x="${c * 100 + 8}" y="${r * 100 + 20}" font-size="13" fill="var(--text-dim)" font-family="Consolas, monospace" pointer-events="none">${zone}</text>`;
-    });
-  });
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      s += `<rect class="zone-cell" data-row="${r}" data-col="${c}" x="${c * 100}" y="${r * 100}" width="100" height="100" fill="transparent" style="cursor:pointer"><title>Click to insert this zone</title></rect>`;
+    }
+  }
   return s;
 }
 

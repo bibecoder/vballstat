@@ -13,6 +13,7 @@ import { mountRallyPanel } from './ui/rallyPanel.js';
 import { mountVisualizerPanel } from './ui/visualizerPanel.js';
 import { mountStatsPanel } from './ui/statsPanel.js';
 import { mountScorePanel } from './ui/scorePanel.js';
+import { mountReportPanel } from './ui/reportPanel.js';
 
 const roster = new Roster();
 const videoEl = document.createElement('video');
@@ -28,10 +29,11 @@ const statsEngine = new StatsEngine();
 mountVideoPanel(document.getElementById('video-panel'), { videoSource, videoEl });
 mountScorePanel(document.getElementById('score-panel'), { roster, scoreboard });
 mountRosterPanel(document.getElementById('roster-panel'), { roster, actionCoder });
-mountCodingPanel(document.getElementById('coding-panel'), { actionCoder, actionLog, roster, videoSource });
+mountCodingPanel(document.getElementById('coding-panel'), { actionCoder, actionLog, roster, videoSource, scoreboard });
 mountRallyPanel(document.getElementById('rally-panel'), { rallyCommitter, roster });
-mountVisualizerPanel(document.getElementById('visualizer-panel'), { rallyCommitter, roster });
+mountVisualizerPanel(document.getElementById('visualizer-panel'), { actionLog, actionCoder, roster });
 mountStatsPanel(document.getElementById('stats-panel'), { statsEngine, actionLog, roster });
+mountReportPanel(document.getElementById('report-panel'), { statsEngine, actionLog, roster, scoreboard });
 
 actionCoder.attach();
 

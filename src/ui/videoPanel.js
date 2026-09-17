@@ -20,6 +20,7 @@ export function mountVideoPanel(root, { videoSource, videoEl }) {
       <span class="timecode-value">00:00.0</span>
       <span class="timecode-mode"></span>
     </div>
+    <div class="video-label"></div>
   `;
 
   root.querySelector('.video-frame').appendChild(videoEl);
@@ -28,6 +29,7 @@ export function mountVideoPanel(root, { videoSource, videoEl }) {
 
   const timecodeValue = root.querySelector('.timecode-value');
   const timecodeMode = root.querySelector('.timecode-mode');
+  const videoLabel = root.querySelector('.video-label');
   const webcamOnly = root.querySelector('[data-webcam-only]');
 
   root.querySelector('[data-action="webcam"]').addEventListener('click', async () => {
@@ -59,6 +61,7 @@ export function mountVideoPanel(root, { videoSource, videoEl }) {
       : 'no source';
     webcamOnly.style.display = status.mode === 'webcam' ? 'flex' : 'none';
     videoEl.controls = status.mode === 'file';
+    videoLabel.textContent = status.label ? `Source: ${status.label}` : '';
   }
 
   videoSource.onChange(render);

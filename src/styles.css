@@ -46,7 +46,8 @@ body {
     "video coding score"
     "roster coding visualizer"
     "roster rally visualizer"
-    "roster stats stats";
+    "roster stats stats"
+    "roster report report";
   gap: 12px;
   padding: 12px;
   align-items: start;
@@ -59,6 +60,7 @@ body {
 .panel-rally { grid-area: rally; }
 .panel-visualizer { grid-area: visualizer; }
 .panel-stats { grid-area: stats; }
+.panel-report { grid-area: report; }
 
 .panel {
   background: var(--panel-bg);
@@ -327,7 +329,30 @@ kbd {
       "rally"
       "visualizer"
       "roster"
-      "stats";
+      "stats"
+      "report";
   }
   .legend { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- zone buffer / suggestions (live coding) ---------- */
+.buffer-zone { color: var(--accent); font-family: 'Consolas', monospace; min-width: 1.5em; }
+.buffer-zone.filled { font-weight: 700; }
+.suggest-row { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px; flex-wrap: wrap; }
+.suggest-label { font-size: 11px; color: var(--text-dim); }
+.suggest-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.suggest-chip { font-size: 11px; padding: 3px 8px; border-radius: 999px; }
+.suggest-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- video source label ---------- */
+.video-label { margin-top: 4px; font-size: 11px; color: var(--text-dim); }
+
+/* ---------- match report panel ---------- */
+.report-score { font-size: 15px; margin-bottom: 12px; }
+.report-teams { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.report-team { flex: 1; min-width: 180px; }
+.report-team h4, .report-body h4 { margin: 10px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+.report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.report-table td { padding: 3px 4px; border-bottom: 1px solid var(--panel-border); }
+.report-list { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
+.report-empty { color: var(--text-dim); font-size: 12px; font-style: italic; margin: 4px 0; }

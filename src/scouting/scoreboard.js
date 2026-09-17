@@ -49,4 +49,10 @@ export class Scoreboard {
     this.score = defaultScore();
     this._save();
   }
+
+  // Bulk-set, e.g. after a DVW import.
+  setScore(score) {
+    this.score = { ...defaultScore(), ...score };
+    this._save();
+  }
 }

@@ -44,12 +44,19 @@ export class ActionLog {
     this._emit();
   }
 
+  // Bulk-replace the whole log at once, e.g. after a DVW import. Ids are
+  // reassigned so they can't collide with anything already generated.
+  replaceAll(actions) {
+    this.actions = actions.map((a) => ({ ...a, id: nextId++ }));
+    this._emit();
+  }
+
   list() {
     return this.actions;
   }
 
-  toCSV() {
-    const header = ['#', 'video_time', 'wall_clock', 'team', 'player_number', 'player_name', 'skill', 'evaluation', 'code'];
+  toCSV(videoLabel) {
+    const header = ['#', 'video_time', 'wall_clock', 'team', 'player_number', 'player_name', 'skill', 'evaluation', 'zone', 'code'];
     const rows = this.actions.map((a, i) => [
       i + 1,
       a.videoTime.toFixed(2),
@@ -59,13 +66,15 @@ export class ActionLog {
       a.playerName,
       a.skillName,
       a.evaluation,
+      a.zone ? `${a.fromZone ? a.fromZone + (a.fromSubzone || '') + '>' : ''}${a.zone}${a.subzone || ''}` : '',
       a.code,
     ]);
-    return [header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n');
+    const meta = videoLabel ? [[`# video_source: ${videoLabel}`]] : [];
+    return meta.concat([header], rows).map((r) => r.map(csvEscape).join(',')).join('\n');
   }
 
-  toJSON() {
-    return JSON.stringify(this.actions, null, 2);
+  toJSON(videoLabel) {
+    return JSON.stringify({ videoSource: videoLabel || null, actions: this.actions }, null, 2);
   }
 }
 

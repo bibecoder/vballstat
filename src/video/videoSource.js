@@ -11,6 +11,7 @@ export class VideoSource {
     this.videoEl = videoEl;
     this.mode = null; // 'webcam' | 'file'
     this.stream = null;
+    this.label = null; // human-readable reference: filename, or 'webcam (live)'
 
     // Manual match clock used for the webcam (live) case.
     this._clockRunning = false;
@@ -36,6 +37,7 @@ export class VideoSource {
     this.videoEl.muted = true;
     await this.videoEl.play();
     this.mode = 'webcam';
+    this.label = 'webcam (live)';
     this._clockRunning = false;
     this._clockAccumulated = 0;
     this._emit();
@@ -48,6 +50,7 @@ export class VideoSource {
     this.videoEl.src = url;
     this.videoEl.muted = false;
     this.mode = 'file';
+    this.label = file.name;
     this._emit();
   }
 
@@ -78,6 +81,7 @@ export class VideoSource {
       this.stream = null;
     }
     this.mode = null;
+    this.label = null;
     this._clockRunning = false;
     this._clockAccumulated = 0;
   }
@@ -97,6 +101,7 @@ export class VideoSource {
   status() {
     return {
       mode: this.mode,
+      label: this.label,
       clockRunning: this.mode === 'file' ? !this.videoEl.paused : this._clockRunning,
       currentTime: this.currentTime(),
     };

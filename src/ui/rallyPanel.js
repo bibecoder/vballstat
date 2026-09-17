@@ -1,4 +1,4 @@
-import { evalLabel } from '../scouting/codes.js';
+import { evalLabel, formatZoneSegment } from '../scouting/codes.js';
 import { RALLY_EXAMPLE } from '../scouting/rallyParser.js';
 
 // The "typebox" workflow: type the whole rally as one line while
@@ -7,8 +7,8 @@ import { RALLY_EXAMPLE } from '../scouting/rallyParser.js';
 export function mountRallyPanel(root, { rallyCommitter, roster }) {
   root.innerHTML = `
     <div class="panel-header">Rally Line Input</div>
-    <p class="rally-hint">Same codes as Live Coding, strung together: <code>Team</code><code>Player#</code><code>Skill</code><code>[Zone]</code><code>Eval</code>
-      — e.g. <code>H13S5+</code>. Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code> to award the point.</p>
+    <p class="rally-hint">Same codes as Live Coding, strung together: <code>Team</code><code>Player#</code><code>Skill</code><code>[From&gt;]Zone[Subzone]</code><code>Eval</code>
+      — e.g. <code>H13S3&gt;5a+</code> (serve from zone 3 to zone 5, near-left quadrant). Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code>.</p>
     <input type="text" class="rally-input" placeholder="${RALLY_EXAMPLE}" autocomplete="off" spellcheck="false" />
     <div class="rally-preview" data-empty="Nothing parsed yet — start typing…"></div>
     <div class="rally-errors"></div>
@@ -37,9 +37,9 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
     preview.innerHTML = parsed.actions
       .map((a) => {
         const team = a.team === 'home' ? roster.teamName('home') : roster.teamName('away');
-        const zone = a.zone ? ` @${a.zone}` : '';
+        const zoneSeg = formatZoneSegment(a.fromZone, a.fromSubzone, a.zone, a.subzone);
         return `<span class="rally-chip eval-${evalClass(a.evaluation)}" title="${escapeHtml(evalLabel(a.skill, a.evaluation))}">
-          ${escapeHtml(team)} #${a.playerNumber} ${a.skillName}${zone} ${a.evaluation}
+          ${escapeHtml(team)} #${a.playerNumber} ${a.skillName}${zoneSeg ? ' @' + zoneSeg : ''} ${a.evaluation}
         </span>`;
       })
       .join('') + (parsed.pointTeam ? `<span class="rally-chip rally-point">Point → ${escapeHtml(roster.teamName(parsed.pointTeam))}</span>` : '');

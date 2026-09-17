@@ -1,11 +1,14 @@
-import { TEAM_KEYS, SKILLS, EVALUATIONS, skillName } from './codes.js';
+import { TEAM_KEYS, SKILLS, EVALUATIONS, SUBZONES, skillName, buildActionCode } from './codes.js';
 
 // Keyboard state machine that turns a fast key sequence
-//   <team> <player#> <skill> <evaluation>
+//   <team> <player#> <skill> [<from-zone><subzone?>>]<zone><subzone?> <evaluation>
 // into a committed Action, exactly mirroring the terse coding grammar
-// DataVolley/VolleyStation scouts type while watching live video.
+// DataVolley/VolleyStation scouts type while watching live video. The
+// zone segment is entirely optional — any evaluation key commits
+// immediately, with or without a zone typed first — and the court
+// visualizer can also fill the zone segment via a click (see setZone).
 //
-// Stages: 'team' -> 'number' -> 'skill'(implicit, number ends on skill key) -> 'evaluation'
+// Stages: team -> number -> skill -> [zone digits -> subzone -> '>' -> zone digits -> subzone] -> evaluation
 export class ActionCoder {
   constructor({ roster, videoSource, actionLog }) {
     this.roster = roster;
@@ -15,6 +18,10 @@ export class ActionCoder {
     this.team = null;
     this.numberBuffer = '';
     this.skill = null;
+    this.zoneDigits = '';
+    this.subzone = null;
+    this.fromZone = null;
+    this.fromSubzone = null;
 
     this._listeners = [];
     this._boundKeydown = this._onKeydown.bind(this);
@@ -41,6 +48,10 @@ export class ActionCoder {
       team: this.team,
       numberBuffer: this.numberBuffer,
       skill: this.skill,
+      zoneDigits: this.zoneDigits,
+      subzone: this.subzone,
+      fromZone: this.fromZone,
+      fromSubzone: this.fromSubzone,
     };
   }
 
@@ -48,6 +59,10 @@ export class ActionCoder {
     this.team = null;
     this.numberBuffer = '';
     this.skill = null;
+    this.zoneDigits = '';
+    this.subzone = null;
+    this.fromZone = null;
+    this.fromSubzone = null;
     this._emit();
   }
 
@@ -56,11 +71,36 @@ export class ActionCoder {
     this.team = team;
     this.numberBuffer = String(number);
     this.skill = null;
+    this.zoneDigits = '';
+    this.subzone = null;
+    this.fromZone = null;
+    this.fromSubzone = null;
+    this._emit();
+  }
+
+  // Allow the court visualizer to fill the current zone slot by click,
+  // instead of typing digits — same effect as typing that zone number
+  // (and its quadrant as a subzone letter) at whatever stage we're at.
+  // Only meaningful once team+player+skill are chosen.
+  setZone(zoneNumber, subzoneLetter) {
+    if (!this.skill) return;
+    this.zoneDigits = String(zoneNumber);
+    this.subzone = subzoneLetter || null;
     this._emit();
   }
 
   _stepBack() {
-    if (this.skill) {
+    if (this.subzone) {
+      this.subzone = null;
+    } else if (this.zoneDigits.length > 0) {
+      this.zoneDigits = this.zoneDigits.slice(0, -1);
+    } else if (this.fromZone !== null) {
+      // Undo the '>' — restore the origin zone as the active slot.
+      this.zoneDigits = String(this.fromZone);
+      this.subzone = this.fromSubzone;
+      this.fromZone = null;
+      this.fromSubzone = null;
+    } else if (this.skill) {
       this.skill = null;
     } else if (this.numberBuffer.length > 0) {
       this.numberBuffer = this.numberBuffer.slice(0, -1);
@@ -122,8 +162,38 @@ export class ActionCoder {
       return;
     }
 
-    // Stage 4: evaluation symbol commits the action
-    if (this.skill && EVALUATIONS.includes(key)) {
+    if (!this.skill) return;
+
+    // Stage 4a: zone digits for the active slot (target, or origin if '>' follows)
+    if (!this.subzone && /^[0-9]$/.test(key) && this.zoneDigits.length < 2) {
+      e.preventDefault();
+      this.zoneDigits += key;
+      this._emit();
+      return;
+    }
+
+    // Stage 4b: subzone quadrant letter for the active slot
+    if (this.zoneDigits.length > 0 && !this.subzone && SUBZONES.includes(lower) && key === lower) {
+      e.preventDefault();
+      this.subzone = lower;
+      this._emit();
+      return;
+    }
+
+    // Stage 4c: '>' turns the slot just typed into the origin zone, and
+    // opens a fresh slot for the target zone (DataVolley trajectory).
+    if (key === '>' && this.fromZone === null && this.zoneDigits.length > 0) {
+      e.preventDefault();
+      this.fromZone = parseInt(this.zoneDigits, 10);
+      this.fromSubzone = this.subzone;
+      this.zoneDigits = '';
+      this.subzone = null;
+      this._emit();
+      return;
+    }
+
+    // Stage 5: evaluation symbol commits the action, zone or not
+    if (EVALUATIONS.includes(key)) {
       e.preventDefault();
       this._commit(key);
       return;
@@ -134,6 +204,8 @@ export class ActionCoder {
     const number = parseInt(this.numberBuffer, 10);
     const playerName = this.roster.displayName(this.team, number);
     const skillCode = this.skill;
+    const zone = this.zoneDigits ? parseInt(this.zoneDigits, 10) : null;
+    const subzone = zone ? this.subzone : null;
 
     const action = {
       videoTime: this.videoSource.currentTime(),
@@ -144,8 +216,11 @@ export class ActionCoder {
       skill: skillCode,
       skillName: skillName(skillCode),
       evaluation,
-      zone: null,
-      code: `${this.team === 'home' ? 'H' : 'A'}${number}${skillCode}${evaluation}`,
+      zone,
+      subzone,
+      fromZone: this.fromZone,
+      fromSubzone: this.fromZone ? this.fromSubzone : null,
+      code: buildActionCode(this.team, number, skillCode, evaluation, this.fromZone, this.fromSubzone, zone, subzone),
     };
 
     this.actionLog.add(action);

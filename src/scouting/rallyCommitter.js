@@ -1,4 +1,5 @@
 import { parseRallyLine } from './rallyParser.js';
+import { buildActionCode } from './codes.js';
 
 // Bridges a parsed rally line into the same ActionLog + Scoreboard the
 // keystroke-by-keystroke coder writes to, so both input styles feed one
@@ -9,12 +10,6 @@ export class RallyCommitter {
     this.videoSource = videoSource;
     this.actionLog = actionLog;
     this.scoreboard = scoreboard;
-    this.lastCommitted = []; // actions from the most recent commit, for the visualizer
-    this._listeners = [];
-  }
-
-  onCommit(fn) {
-    this._listeners.push(fn);
   }
 
   preview(line) {
@@ -31,8 +26,8 @@ export class RallyCommitter {
     if (parsed.errors.length > 0 || parsed.actions.length === 0) return parsed;
 
     const baseTime = this.videoSource.currentTime();
-    const committed = parsed.actions.map((a, i) => {
-      const action = {
+    parsed.actions.forEach((a, i) => {
+      this.actionLog.add({
         videoTime: baseTime + i * 0.01,
         wallClock: new Date().toISOString(),
         team: a.team,
@@ -42,17 +37,17 @@ export class RallyCommitter {
         skillName: a.skillName,
         evaluation: a.evaluation,
         zone: a.zone,
-        code: `${a.team === 'home' ? 'H' : 'A'}${a.playerNumber}${a.skill}${a.evaluation}` + (a.zone ? `@${a.zone}` : ''),
-      };
-      return this.actionLog.add(action);
+        subzone: a.subzone,
+        fromZone: a.fromZone,
+        fromSubzone: a.fromSubzone,
+        code: buildActionCode(a.team, a.playerNumber, a.skill, a.evaluation, a.fromZone, a.fromSubzone, a.zone, a.subzone),
+      });
     });
 
     if (parsed.pointTeam) {
       this.scoreboard.bump(parsed.pointTeam, 1);
     }
 
-    this.lastCommitted = committed;
-    this._listeners.forEach((fn) => fn(committed, parsed.pointTeam));
     return parsed;
   }
 }

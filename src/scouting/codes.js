@@ -54,3 +54,25 @@ export const COURT_ZONES = [
   [7, 8, 9],
   [5, 6, 1],
 ];
+
+// Each zone is further split into four subzones (DataVolley convention),
+// here mapped to the visual quadrant of the zone's cell:
+//   a b
+//   c d
+export const SUBZONES = ['a', 'b', 'c', 'd'];
+export const SUBZONE_LABEL = { a: 'near/left', b: 'near/right', c: 'far/left', d: 'far/right' };
+
+// Formats a zone segment the same way it's typed/parsed: "3a>5b", "5", or "".
+export function formatZoneSegment(fromZone, fromSubzone, zone, subzone) {
+  const from = fromZone ? `${fromZone}${fromSubzone || ''}>` : '';
+  const to = zone ? `${zone}${subzone || ''}` : '';
+  return from + to;
+}
+
+// Builds the compact code exactly as it would be typed, in the same
+// left-to-right order as both the keyboard coder and the rally line:
+// <Team><Player#><Skill>[Zone segment]<Eval>, e.g. "H13S3>5a+".
+export function buildActionCode(team, playerNumber, skill, evaluation, fromZone, fromSubzone, zone, subzone) {
+  const teamLetter = team === 'home' ? 'H' : 'A';
+  return `${teamLetter}${playerNumber}${skill}${formatZoneSegment(fromZone, fromSubzone, zone, subzone)}${evaluation}`;
+}

@@ -98,6 +98,12 @@ export class Roster {
     return true;
   }
 
+  // Bulk-replace both rosters at once, e.g. after a DVW import.
+  replaceAll(teams) {
+    this.teams = teams;
+    this._save();
+  }
+
   resetToDefault() {
     this.teams = defaultRoster();
     this._save();

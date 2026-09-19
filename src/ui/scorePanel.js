@@ -1,7 +1,7 @@
 // Renders the shared Scoreboard model. Points can come from the manual
-// +/- buttons here, or automatically from a parsed rally line's
-// "Point H" / "Point A" (see rallyPanel.js) — both go through the same
-// Scoreboard instance so the two stay in sync.
+// +/- buttons here, or automatically from a parsed rally line's "HP" /
+// "AP" (see rallyPanel.js) — both go through the same Scoreboard
+// instance so the two stay in sync.
 
 export function mountScorePanel(root, { roster, scoreboard }) {
   function render() {

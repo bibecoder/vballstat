@@ -28,8 +28,8 @@ export class RallyCommitter {
   // Commits every parsed action (stamped with sequential offsets off the
   // current video time, since a rally line is typed after the point ends
   // and has no per-action keystroke timing of its own) and, if the line
-  // ends in "Point <Team>", awards that point. Returns the parse result
-  // so the caller can surface errors without committing a partial rally.
+  // ends in "HP"/"AP", awards that point. Returns the parse result so
+  // the caller can surface errors without committing a partial rally.
   commit(line) {
     const parsed = parseRallyLine(line);
     if (parsed.errors.length > 0 || parsed.actions.length === 0) return parsed;

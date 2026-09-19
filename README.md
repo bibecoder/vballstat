@@ -56,11 +56,12 @@ or, equivalently, `python3 -m http.server 8000`.
    - Evaluation: `#` Perfect `+` Positive `!` Exclamation/OK `-` Negative
      `/` Poor `=` Error
 
-   Separate actions with `;` or spaces, and close the rally with
-   `Point H` / `Point A` to award the point. Example:
-   `H13S6-8a+; A27R+; H9E4#; H7A#; Point H`. Press `Enter` (or
-   "Commit rally") to commit the whole line at once, stamped with the
-   current video time.
+   Separate actions with `;` or spaces, and close the rally with `HP` /
+   `AP` (team letter + `P`) to award the point — the older two-word
+   `Point H` / `Point A` still works too, `HP`/`AP` is just the fast
+   version. Example: `H13S6-8a+; A27R+; H9E4#; H7A#; HP`. Press `Enter`
+   (or "Commit rally") to commit the whole line at once, stamped with
+   the current video time.
 
    **Click to assist typing** instead of typing every character:
    clicking a roster player inserts their `H13`-style token at the

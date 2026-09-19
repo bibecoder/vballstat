@@ -11,7 +11,7 @@ import { SKILL_ORDER, EVALUATIONS, skillName } from './codes.js';
 //   <FromZone><Subzone?>>ZoneSeg  e.g. "3>5" or "3a>5b"          (origin>target, DataVolley trajectory)
 //   <FromZone><Subzone?>-ZoneSeg  e.g. "6-8" or "6a-8b"          (serve: start position-end position)
 //
-//   H13S6-8+; A27R+ A32E4-3a>5b; H34B+; Point H
+//   H13S6-8+; A27R+ A32E4-3a>5b; H34B+; HP
 //
 // "-" and ">" both parse identically as the origin/target separator —
 // the distinction is purely which one gets *written back out*, per
@@ -26,7 +26,9 @@ import { SKILL_ORDER, EVALUATIONS, skillName } from './codes.js';
 // Tokens are separated by ';' and/or whitespace interchangeably — both
 // appear in real transcriptions depending on how the scout groups
 // phases of the rally, so the tokenizer treats them the same way.
-// "Point <Team>" (two words) closes the rally.
+// A single compact token, "HP" or "AP" (team letter + P), closes the
+// rally and awards the point — the older two-word "Point H" / "Point A"
+// still parses too, so it's a drop-in shorthand, not a breaking change.
 
 const SKILL_ALTERNATION = SKILL_ORDER.join('|');
 const EVAL_ALTERNATION = EVALUATIONS.map((e) => `\\${e}`).join('|');
@@ -47,6 +49,16 @@ export function parseRallyLine(line) {
 
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
+
+    // Compact point token: "HP" / "AP" (team letter + P). Never
+    // collides with an action code, which always requires a player
+    // number (one or more digits) between the team letter and the
+    // skill letter, and "P" isn't a skill letter anyway.
+    const compactPoint = /^([HA])P$/i.exec(word);
+    if (compactPoint) {
+      pointTeam = compactPoint[1].toUpperCase() === 'H' ? 'home' : 'away';
+      continue;
+    }
 
     if (/^point$/i.test(word)) {
       const teamWord = words[i + 1];
@@ -85,4 +97,4 @@ export function parseRallyLine(line) {
   return { actions, pointTeam, errors };
 }
 
-export const RALLY_EXAMPLE = 'H13S6-8a+; A27R+ A32E4-; H34B+; Point H';
+export const RALLY_EXAMPLE = 'H13S6-8a+; A27R+ A32E4-; H34B+; HP';

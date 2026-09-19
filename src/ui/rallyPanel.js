@@ -12,7 +12,7 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
   root.innerHTML = `
     <div class="panel-header">Rally Line Input</div>
     <p class="rally-hint"><code>Team</code><code>Player#</code><code>Skill</code><code>[From&gt;/-]Zone[Subzone]</code><code>Eval</code>
-      — e.g. <code>H13S6-8a+</code> (serve: started at position 6, landed at zone 8, near-left quadrant) or <code>H7A3&gt;2a#</code> (attack from zone 3 to zone 2, near-left). Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code>.
+      — e.g. <code>H13S6-8a+</code> (serve: started at position 6, landed at zone 8, near-left quadrant) or <code>H7A3&gt;2a#</code> (attack from zone 3 to zone 2, near-left). Separate actions with <code>;</code> or spaces; end with <code>HP</code> / <code>AP</code> to award the point.
       Click a roster player or a court zone to insert it at the cursor.</p>
     <input type="text" class="rally-input" placeholder="${RALLY_EXAMPLE}" autocomplete="off" spellcheck="false" />
     <div class="rally-preview" data-empty="Nothing parsed yet — start typing…"></div>
@@ -47,6 +47,7 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
         </div>
         <div class="legend-group">
           <strong>Control</strong>
+          <span><kbd>HP</kbd> / <kbd>AP</kbd> award point</span>
           <span><kbd>Enter</kbd> commit rally</span>
           <span><kbd>Ctrl+Z</kbd> undo last</span>
         </div>

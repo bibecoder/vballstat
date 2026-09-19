@@ -1,5 +1,5 @@
 // Manual scoreboard, shared between the score panel UI and the rally-line
-// committer (a parsed "Point H"/"Point A" bumps it automatically).
+// committer (a parsed "HP"/"AP" bumps it automatically).
 
 const STORAGE_KEY = 'vballstat.score.v1';
 

@@ -10,6 +10,15 @@ export class RallyCommitter {
     this.videoSource = videoSource;
     this.actionLog = actionLog;
     this.scoreboard = scoreboard;
+    this._commitListeners = [];
+  }
+
+  // Fired once per successful commit, before any of its actions are
+  // added to the log — lets a listener (the Court Visualizer) reset its
+  // view of "the current rally" right as a new one starts, rather than
+  // accumulating markers/trails across every rally in the match.
+  onCommit(fn) {
+    this._commitListeners.push(fn);
   }
 
   preview(line) {
@@ -24,6 +33,8 @@ export class RallyCommitter {
   commit(line) {
     const parsed = parseRallyLine(line);
     if (parsed.errors.length > 0 || parsed.actions.length === 0) return parsed;
+
+    this._commitListeners.forEach((fn) => fn());
 
     const baseTime = this.videoSource.currentTime();
     parsed.actions.forEach((a, i) => {

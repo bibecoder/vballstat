@@ -30,6 +30,13 @@ import { COURT_ZONES, SKILLS, SKILL_ORDER, evalLabel } from '../scouting/codes.j
 // its quadrant, from where in the cell you click) into the Rally Line
 // textbox at the cursor, the same "point at where it landed" workflow
 // openvolley's ovscout2 uses on a video frame, applied to this diagram.
+//
+// The diagram only ever shows the rally currently being reviewed, not a
+// trail accumulated across the whole match: RallyCommitter.onCommit
+// fires right as each new rally line is committed (before its actions
+// are added to the log), which resets rallyStartIndex to "here" so the
+// previous rally's markers/arrows disappear and only the new rally's
+// own actions get drawn as they come in.
 const SKILL_COLOR = {
   S: '#4fb3ff', // serve
   E: '#c084fc', // set
@@ -91,7 +98,7 @@ function serveOriginPoint(a) {
   return { x, y };
 }
 
-export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
+export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster, rallyCommitter }) {
   root.innerHTML = `
     <div class="panel-header">
       <span>Court Visualizer <span class="viz-caption">click a zone to insert it</span></span>
@@ -127,6 +134,12 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
   const trailsLayer = root.querySelector('.court-trails');
   const legend = root.querySelector('.viz-legend');
   const empty = root.querySelector('.viz-empty');
+
+  // Index into actionLog.list() where the current rally's own actions
+  // begin. Reset on every commit (before its actions are added) so the
+  // diagram shows only the rally just played, not a trail accumulated
+  // across the whole match.
+  let rallyStartIndex = 0;
 
   function renderHalfLabels() {
     root.querySelectorAll('.half-label').forEach((el) => {
@@ -198,6 +211,7 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
   function render() {
     const located = actionLog
       .list()
+      .slice(rallyStartIndex)
       .filter((a) => a.zone)
       .slice(-TRAIL_LENGTH);
 
@@ -239,6 +253,10 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
 
   actionLog.onChange(render);
   roster.onChange(renderHalfLabels);
+  rallyCommitter.onCommit(() => {
+    rallyStartIndex = actionLog.list().length;
+    render();
+  });
   renderHalfLabels();
   render();
 }

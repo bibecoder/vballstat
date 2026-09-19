@@ -29,7 +29,7 @@ mountScorePanel(document.getElementById('score-panel'), { roster, scoreboard });
 mountLogPanel(document.getElementById('log-panel'), { actionLog, roster, videoSource, scoreboard });
 const rallyPanel = mountRallyPanel(document.getElementById('rally-panel'), { rallyCommitter, roster });
 mountRosterPanel(document.getElementById('roster-panel'), { roster, rallyPanel });
-mountVisualizerPanel(document.getElementById('visualizer-panel'), { actionLog, rallyPanel, roster });
+mountVisualizerPanel(document.getElementById('visualizer-panel'), { actionLog, rallyPanel, roster, rallyCommitter });
 mountStatsPanel(document.getElementById('stats-panel'), { statsEngine, actionLog, roster });
 mountReportPanel(document.getElementById('report-panel'), { statsEngine, actionLog, roster, scoreboard });
 

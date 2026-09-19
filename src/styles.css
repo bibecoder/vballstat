@@ -41,13 +41,15 @@ body {
 
 .app-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1.1fr;
+  grid-template-columns: 1.3fr 1fr;
   grid-template-areas:
-    "video  roster court"
-    "log    roster court"
-    "rally  score  court"
-    "stats  stats  stats"
-    "report report report";
+    "video  court"
+    "log    court"
+    "rally  court"
+    ".      score"
+    "roster roster"
+    "stats  stats"
+    "report report";
   gap: 12px;
   padding: 12px;
   align-items: start;
@@ -89,6 +91,7 @@ body {
   border-radius: 6px;
   overflow: hidden;
   aspect-ratio: 16 / 9;
+  max-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,12 +207,14 @@ input[type="text"], input[type="number"] {
 
 /* ---------- score panel ---------- */
 .set-label { font-weight: 400; text-transform: none; color: var(--accent); }
-.score-row { display: flex; gap: 10px; }
-.score-team { flex: 1; background: #10151e; border-radius: 6px; padding: 10px; text-align: center; }
-.score-name { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-.score-value { font-size: 32px; font-weight: 700; color: var(--accent); }
-.score-buttons { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
-.set-buttons { display: flex; gap: 6px; margin-top: 10px; }
+.score-row { display: flex; gap: 8px; }
+.score-team { flex: 1; background: #10151e; border-radius: 6px; padding: 6px 8px; text-align: center; }
+.score-name { font-size: 10.5px; color: var(--text-dim); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.score-value { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+.score-buttons { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+.score-buttons button { padding: 2px 8px; }
+.set-buttons { display: flex; gap: 6px; margin-top: 6px; }
+.set-buttons button { padding: 4px 8px; font-size: 11px; }
 
 /* ---------- stats panel ---------- */
 .stats-scroll { display: flex; flex-direction: column; gap: 16px; max-height: 520px; overflow-y: auto; }
@@ -283,10 +288,10 @@ input[type="text"], input[type="number"] {
     grid-template-areas:
       "video"
       "log"
-      "rally"
-      "roster"
-      "score"
       "court"
+      "rally"
+      "score"
+      "roster"
       "stats"
       "report";
   }

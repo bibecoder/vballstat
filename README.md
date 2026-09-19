@@ -29,11 +29,19 @@ or, equivalently, `python3 -m http.server 8000`.
 1. **Set up rosters.** The Roster panel comes pre-loaded with two sample
    teams (Home / Away). Edit team names, jersey numbers, and player
    names — this mirrors DataVolley's pre-match roster setup.
-2. **Start the video feed.** Choose either:
+2. **Start the video feed.** Choose one of:
    - **Webcam (live)** — a real live video feed, clock starts on "Start
      match clock".
    - **Video file** — load a local recording and code it exactly like a
      live feed, using the video's own playback clock as the sync source.
+   - **YouTube** — paste any YouTube link (watch/youtu.be/embed/shorts,
+     or a bare video ID) into the field under the video controls and
+     click "Load YouTube" to code straight off game film someone's
+     shared as a link rather than a file; "Load reference clip" loads
+     one preset example video the same way. Embedded via YouTube's own
+     IFrame Player API, so the app still gets a real playback clock
+     (the player's own `getCurrentTime()`) to timestamp actions against,
+     the same role `.currentTime` plays for a loaded file.
 3. **Type the rally in Rally Line Input**, the sole manual-entry method,
    sitting directly under the play-by-play log. Type the whole point as
    one line, using the same compact code for every action:

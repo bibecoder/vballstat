@@ -89,6 +89,7 @@ body {
 
 /* ---------- video panel ---------- */
 .video-frame {
+  position: relative;
   background: #000;
   border-radius: 6px;
   overflow: hidden;
@@ -99,6 +100,8 @@ body {
   justify-content: center;
 }
 .video-el { width: 100%; height: 100%; object-fit: contain; background: #000; }
+.youtube-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+.youtube-frame iframe { width: 100%; height: 100%; display: block; border: 0; }
 
 .video-controls {
   display: flex;
@@ -107,6 +110,9 @@ body {
   margin-top: 10px;
 }
 .clock-controls { display: flex; gap: 6px; width: 100%; }
+
+.youtube-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.youtube-controls .youtube-url { flex: 1; min-width: 140px; }
 
 .timecode {
   margin-top: 10px;

@@ -18,13 +18,14 @@ const roster = new Roster();
 const videoEl = document.createElement('video');
 videoEl.autoplay = true;
 videoEl.playsInline = true;
-const videoSource = new VideoSource(videoEl);
+const youtubeContainerEl = document.createElement('div');
+const videoSource = new VideoSource(videoEl, youtubeContainerEl);
 const actionLog = new ActionLog();
 const scoreboard = new Scoreboard();
 const rallyCommitter = new RallyCommitter({ roster, videoSource, actionLog, scoreboard });
 const statsEngine = new StatsEngine();
 
-mountVideoPanel(document.getElementById('video-panel'), { videoSource, videoEl });
+mountVideoPanel(document.getElementById('video-panel'), { videoSource, videoEl, youtubeContainerEl });
 mountScorePanel(document.getElementById('score-panel'), { roster, scoreboard });
 mountLogPanel(document.getElementById('log-panel'), { actionLog, roster, videoSource, scoreboard });
 const rallyPanel = mountRallyPanel(document.getElementById('rally-panel'), { rallyCommitter, roster });

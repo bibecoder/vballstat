@@ -43,10 +43,9 @@ body {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   grid-template-areas:
-    "video  court"
-    "log    court"
-    "rally  court"
-    ".      score"
+    "video  courtcol"
+    "log    courtcol"
+    "rally  courtcol"
     "roster roster"
     "stats  stats"
     "report report";
@@ -57,12 +56,15 @@ body {
 
 .panel-video { grid-area: video; }
 .panel-log { grid-area: log; }
-.panel-score { grid-area: score; }
 .panel-roster { grid-area: roster; }
 .panel-rally { grid-area: rally; }
-.panel-court { grid-area: court; }
 .panel-stats { grid-area: stats; }
 .panel-report { grid-area: report; }
+
+/* Court + Score share one grid cell, stacked, so the scoreboard sits
+   right under the visualizer instead of opening a spacer row/gap when
+   its own content is shorter than Court's tall two-court SVG. */
+.court-col { grid-area: courtcol; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
 .panel {
   background: var(--panel-bg);
@@ -288,9 +290,8 @@ input[type="text"], input[type="number"] {
     grid-template-areas:
       "video"
       "log"
-      "court"
+      "courtcol"
       "rally"
-      "score"
       "roster"
       "stats"
       "report";

@@ -11,8 +11,8 @@ import { RALLY_EXAMPLE } from '../scouting/rallyParser.js';
 export function mountRallyPanel(root, { rallyCommitter, roster }) {
   root.innerHTML = `
     <div class="panel-header">Rally Line Input</div>
-    <p class="rally-hint"><code>Team</code><code>Player#</code><code>Skill</code><code>[From&gt;]Zone[Subzone]</code><code>Eval</code>
-      — e.g. <code>H13S3&gt;5a+</code> (serve from zone 3 to zone 5, near-left quadrant). Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code>.
+    <p class="rally-hint"><code>Team</code><code>Player#</code><code>Skill</code><code>[From&gt;/-]Zone[Subzone]</code><code>Eval</code>
+      — e.g. <code>H13S6-8a+</code> (serve: started at position 6, landed at zone 8, near-left quadrant) or <code>H7A3&gt;2a#</code> (attack from zone 3 to zone 2, near-left). Separate actions with <code>;</code> or spaces; end with <code>Point H</code> / <code>Point A</code>.
       Click a roster player or a court zone to insert it at the cursor.</p>
     <input type="text" class="rally-input" placeholder="${RALLY_EXAMPLE}" autocomplete="off" spellcheck="false" />
     <div class="rally-preview" data-empty="Nothing parsed yet — start typing…"></div>
@@ -38,7 +38,8 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
           <strong>Zone (optional)</strong>
           <span><kbd>1-9</kbd> target zone</span>
           <span><kbd>a-d</kbd> quadrant</span>
-          <span><kbd>&gt;</kbd> from&gt;to trajectory</span>
+          <span><kbd>&gt;</kbd> from&gt;to (attack, etc.)</span>
+          <span><kbd>-</kbd> start-end (serve)</span>
         </div>
         <div class="legend-group">
           <strong>Evaluation</strong>
@@ -72,7 +73,7 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
     preview.innerHTML = parsed.actions
       .map((a) => {
         const team = a.team === 'home' ? roster.teamName('home') : roster.teamName('away');
-        const zoneSeg = formatZoneSegment(a.fromZone, a.fromSubzone, a.zone, a.subzone);
+        const zoneSeg = formatZoneSegment(a.fromZone, a.fromSubzone, a.zone, a.subzone, a.skill);
         return `<span class="rally-chip eval-${evalClass(a.evaluation)}" title="${escapeHtml(evalLabel(a.skill, a.evaluation))}">
           ${escapeHtml(team)} #${a.playerNumber} ${a.skillName}${zoneSeg ? ' @' + zoneSeg : ''} ${a.evaluation}
         </span>`;

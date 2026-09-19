@@ -62,17 +62,24 @@ export const COURT_ZONES = [
 export const SUBZONES = ['a', 'b', 'c', 'd'];
 export const SUBZONE_LABEL = { a: 'near/left', b: 'near/right', c: 'far/left', d: 'far/right' };
 
-// Formats a zone segment the same way it's typed/parsed: "3a>5b", "5", or "".
-export function formatZoneSegment(fromZone, fromSubzone, zone, subzone) {
-  const from = fromZone ? `${fromZone}${fromSubzone || ''}>` : '';
+// Formats a zone segment the same way it's typed/parsed. Serve's
+// origin/target separator is "-" (e.g. "6-8", start position 6, end
+// position 8) since a serve's "from" is where the server stood, not a
+// trajectory through the court; every other skill keeps ">" (e.g.
+// "3a>5b") for a from-zone that's a real in-court trajectory. Both
+// separators parse identically either way (see rallyParser.js) — this
+// only controls which one gets written back out.
+export function formatZoneSegment(fromZone, fromSubzone, zone, subzone, skill) {
+  const sep = skill === 'S' ? '-' : '>';
+  const from = fromZone ? `${fromZone}${fromSubzone || ''}${sep}` : '';
   const to = zone ? `${zone}${subzone || ''}` : '';
   return from + to;
 }
 
 // Builds the compact code exactly as it would be typed, in the same
 // left-to-right order as both the keyboard coder and the rally line:
-// <Team><Player#><Skill>[Zone segment]<Eval>, e.g. "H13S3>5a+".
+// <Team><Player#><Skill>[Zone segment]<Eval>, e.g. "H13S6-8+".
 export function buildActionCode(team, playerNumber, skill, evaluation, fromZone, fromSubzone, zone, subzone) {
   const teamLetter = team === 'home' ? 'H' : 'A';
-  return `${teamLetter}${playerNumber}${skill}${formatZoneSegment(fromZone, fromSubzone, zone, subzone)}${evaluation}`;
+  return `${teamLetter}${playerNumber}${skill}${formatZoneSegment(fromZone, fromSubzone, zone, subzone, skill)}${evaluation}`;
 }

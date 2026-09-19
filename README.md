@@ -38,7 +38,7 @@ or, equivalently, `python3 -m http.server 8000`.
    sitting directly under the play-by-play log. Type the whole point as
    one line, using the same compact code for every action:
 
-   `<Team><Player#><Skill>[From>]Zone[Subzone]<Evaluation>`
+   `<Team><Player#><Skill>[From>/-]Zone[Subzone]<Evaluation>`
 
    - Team: `H` (Home) or `A` (Away)
    - Player number: digits (e.g. `7`)
@@ -46,14 +46,19 @@ or, equivalently, `python3 -m http.server 8000`.
      `D` Dig · `F` Freeball
    - Zone (optional): a target zone `1`-`9` on the standard DataVolley
      grid, an optional quadrant letter `a`-`d` for extra precision, and
-     an optional `<origin>>` prefix for a full from→to trajectory (e.g.
-     `3>5a` = served from zone 3 to zone 5, near-left quadrant)
+     an optional `<origin>` prefix for a full start→end trajectory.
+     Serve uses `-` (e.g. `6-8a` = served from position 6, landed at
+     zone 8, near-left quadrant), since a serve's "from" is where the
+     server stood, not an in-court trajectory; every other skill uses
+     `>` (e.g. `3>5a` = attacked from zone 3 to zone 5, near-left
+     quadrant). Both separators parse the same either way — this only
+     affects which one gets written back into the log/exports.
    - Evaluation: `#` Perfect `+` Positive `!` Exclamation/OK `-` Negative
      `/` Poor `=` Error
 
    Separate actions with `;` or spaces, and close the rally with
    `Point H` / `Point A` to award the point. Example:
-   `H13S3>5a+; A27R+; H9E4#; H7A#; Point H`. Press `Enter` (or
+   `H13S6-8a+; A27R+; H9E4#; H7A#; Point H`. Press `Enter` (or
    "Commit rally") to commit the whole line at once, stamped with the
    current video time.
 
@@ -68,13 +73,17 @@ or, equivalently, `python3 -m http.server 8000`.
 4. **Read the court visualizer.** One diagram shows both teams' courts
    at once, net in the middle — Away's zone grid above it (pre-rotated
    180° for their own baseline), Home's below (normal orientation) —
-   so neither team's numbers ever need mentally mirroring. Serve and
-   Attack cross the net: their target zone is drawn on the *opposing*
-   team's half (using that team's own numbering) and always gets an
-   arrow, from an explicit `from` zone if one was typed or otherwise
-   from a generic point at the net on the attacking side. Every other
-   skill (reception, set, block, dig, freeball) stays within the acting
-   team's own half.
+   so neither team's numbers ever need mentally mirroring. A dashed
+   "serve zone" strip sits outside each team's own baseline (behind the
+   grid entirely): every Serve's arrow starts there, since a serve is
+   struck from behind the end line, not from inside the court — the
+   rally line's `<start>-` zone/subzone still controls where along that
+   baseline it's drawn. Attack also crosses the net, landing in the
+   *opposing* team's half (using that team's own numbering), with its
+   arrow starting from an explicit `from` zone if one was typed or
+   otherwise from a generic point at the net on the attacking side.
+   Every other skill (reception, set, block, dig, freeball) stays
+   within the acting team's own half.
 5. **Read the live stats table and match report.** Per-player and
    per-team rows break down attempts and evaluation counts for every
    skill, with standard efficiency metrics (kill %, error %, efficiency,

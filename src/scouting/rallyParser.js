@@ -9,8 +9,19 @@ import { SKILL_ORDER, EVALUATIONS, skillName } from './codes.js';
 //
 //   <Zone><Subzone?>              e.g. "5" or "5a"              (target only)
 //   <FromZone><Subzone?>>ZoneSeg  e.g. "3>5" or "3a>5b"          (origin>target, DataVolley trajectory)
+//   <FromZone><Subzone?>-ZoneSeg  e.g. "6-8" or "6a-8b"          (serve: start position-end position)
 //
-//   H13S5+; A27R+ A32E4-3a>5b; H34B+; Point H
+//   H13S6-8+; A27R+ A32E4-3a>5b; H34B+; Point H
+//
+// "-" and ">" both parse identically as the origin/target separator —
+// the distinction is purely which one gets *written back out*, per
+// skill (see codes.js formatZoneSegment): "-" for Serve since its
+// "from" zone is where the server stood, not an in-court trajectory;
+// ">" for everything else. Accepting either on input means a typed "-"
+// serve code round-trips, and never collides with "-" as the trailing
+// Negative evaluation symbol, since a bare eval always sits at the very
+// end of the word while a separator always sits between two zone
+// digits.
 //
 // Tokens are separated by ';' and/or whitespace interchangeably — both
 // appear in real transcriptions depending on how the scout groups
@@ -21,7 +32,7 @@ const SKILL_ALTERNATION = SKILL_ORDER.join('|');
 const EVAL_ALTERNATION = EVALUATIONS.map((e) => `\\${e}`).join('|');
 
 const ACTION_RE = new RegExp(
-  `^([HA])(\\d{1,2})(${SKILL_ALTERNATION})(?:(\\d{1,2})([a-dA-D])?>)?(\\d{0,2})([a-dA-D])?(${EVAL_ALTERNATION})$`,
+  `^([HA])(\\d{1,2})(${SKILL_ALTERNATION})(?:(\\d{1,2})([a-dA-D])?[>-])?(\\d{0,2})([a-dA-D])?(${EVAL_ALTERNATION})$`,
   'i'
 );
 
@@ -74,4 +85,4 @@ export function parseRallyLine(line) {
   return { actions, pointTeam, errors };
 }
 
-export const RALLY_EXAMPLE = 'H13S3>5a+; A27R+ A32E4-; H34B+; Point H';
+export const RALLY_EXAMPLE = 'H13S6-8a+; A27R+ A32E4-; H34B+; Point H';

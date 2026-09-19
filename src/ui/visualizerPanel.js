@@ -11,13 +11,20 @@ import { COURT_ZONES, SKILLS, SKILL_ORDER, evalLabel } from '../scouting/codes.j
 // Serve and Attack ("hit") are the two skills that cross the net: their
 // target zone is drawn on the OPPOSING team's half (using the opposing
 // team's own numbering, matching how a landing zone is conventionally
-// described), and they always get an arrow — from an explicit `from`
-// zone if one was typed, otherwise from a generic point at the net on
-// the attacking team's own side, since the ball demonstrably crossed
-// the net even when the exact launch zone wasn't recorded. Every other
-// skill (reception, set, block, dig, freeball) happens entirely within
-// the acting team's own court, so its zone (and any `from` zone) stays
-// on that team's own half.
+// described), and they always get an arrow. Attack's arrow starts from
+// an explicit `from` zone if one was typed, otherwise from a generic
+// point at the net on the attacking team's own side, since the ball
+// demonstrably crossed the net even when the exact launch zone wasn't
+// recorded. Serve is different: it never starts inside the court at
+// all — a thin "serve zone" strip behind each team's own baseline
+// (outside the 3x3 grid entirely) is where every serve's arrow starts,
+// since a serve is by definition struck from behind the end line. The
+// rally line's existing `<origin>>` zone/subzone still controls *where
+// along that baseline* the marker sits (its column, and a left/right
+// nudge from the subzone) — there's no separate input for it. Every
+// other skill (reception, set, block, dig, freeball) happens entirely
+// within the acting team's own court, so its zone (and any `from`
+// zone) stays inside that team's own half.
 //
 // The 18 zone cells are clickable — click inserts that cell's zone (and
 // its quadrant, from where in the cell you click) into the Rally Line
@@ -38,6 +45,8 @@ const TRAIL_LENGTH = 8;
 const HALF_H = 300; // px height of one team's half in the SVG
 const NET_GAP = 20; // px gap drawn between the two halves
 const TOTAL_H = HALF_H * 2 + NET_GAP;
+const SERVE_ZONE = 34; // px strip behind each baseline where serve origins are drawn
+const SVG_H = TOTAL_H + SERVE_ZONE * 2;
 
 function rotate180(grid) {
   return grid.slice().reverse().map((row) => row.slice().reverse());
@@ -55,10 +64,31 @@ function gridFor(team) {
   return team === 'home' ? COURT_ZONES : rotate180(COURT_ZONES);
 }
 
-// y of the half's own top edge: Away sits above the net (y=0..300),
-// Home below it (y=320..620).
+// y of the half's own top edge, shifted down by SERVE_ZONE so a strip
+// for behind-the-baseline serve origins fits above Away's court and
+// below Home's. Away sits above the net, Home below it.
 function yOffsetFor(team) {
-  return team === 'home' ? HALF_H + NET_GAP : 0;
+  return SERVE_ZONE + (team === 'home' ? HALF_H + NET_GAP : 0);
+}
+
+// A serve's real origin is behind the end line, outside the 3x3 zone
+// grid entirely — never inside the court like every other skill's
+// from-zone. x comes from the from-zone's column (so the rally line's
+// existing <origin>> zone/subzone still says roughly where along the
+// baseline the server stood); y is fixed in that team's serve strip.
+function serveOriginPoint(a) {
+  const grid = gridFor(a.team);
+  let x = 150;
+  if (a.fromZone) {
+    for (let r = 0; r < 3; r++) {
+      const c = grid[r].indexOf(a.fromZone);
+      if (c !== -1) { x = c * 100 + 50; break; }
+    }
+    if (a.fromSubzone === 'a' || a.fromSubzone === 'c') x -= 22;
+    else if (a.fromSubzone === 'b' || a.fromSubzone === 'd') x += 22;
+  }
+  const y = a.team === 'home' ? SERVE_ZONE + TOTAL_H + SERVE_ZONE / 2 : SERVE_ZONE / 2;
+  return { x, y };
 }
 
 export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
@@ -66,18 +96,24 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
     <div class="panel-header">
       <span>Court Visualizer <span class="viz-caption">click a zone to insert it</span></span>
     </div>
-    <svg class="court-svg" viewBox="0 0 300 ${TOTAL_H}" role="img" aria-label="Volleyball court target-zone diagram, both teams">
+    <svg class="court-svg" viewBox="0 0 300 ${SVG_H}" role="img" aria-label="Volleyball court target-zone diagram, both teams, with serve zones behind each baseline">
       <defs>
         <marker id="viz-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
         </marker>
       </defs>
+      <rect x="0" y="0" width="300" height="${SERVE_ZONE}" fill="var(--panel-border)" opacity="0.35"/>
+      <rect x="0" y="${SERVE_ZONE + TOTAL_H}" width="300" height="${SERVE_ZONE}" fill="var(--panel-border)" opacity="0.35"/>
+      <line x1="0" y1="${SERVE_ZONE}" x2="300" y2="${SERVE_ZONE}" stroke="var(--text-dim)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <line x1="0" y1="${SERVE_ZONE + TOTAL_H}" x2="300" y2="${SERVE_ZONE + TOTAL_H}" stroke="var(--text-dim)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="4" y="${SERVE_ZONE - 5}" font-size="8" letter-spacing="0.5" fill="var(--text-dim)" font-family="Consolas, monospace">SERVE ZONE</text>
+      <text x="4" y="${SERVE_ZONE + TOTAL_H + 13}" font-size="8" letter-spacing="0.5" fill="var(--text-dim)" font-family="Consolas, monospace">SERVE ZONE</text>
       ${halfFrame('away')}
       ${halfFrame('home')}
-      <rect x="0" y="${HALF_H}" width="300" height="${NET_GAP}" fill="var(--accent)" opacity="0.9"/>
-      <text x="150" y="${HALF_H + NET_GAP / 2 + 4}" text-anchor="middle" font-size="10" font-weight="700" letter-spacing="1" fill="#0e1117" font-family="Consolas, monospace">NET</text>
+      <rect x="0" y="${SERVE_ZONE + HALF_H}" width="300" height="${NET_GAP}" fill="var(--accent)" opacity="0.9"/>
+      <text x="150" y="${SERVE_ZONE + HALF_H + NET_GAP / 2 + 4}" text-anchor="middle" font-size="10" font-weight="700" letter-spacing="1" fill="#0e1117" font-family="Consolas, monospace">NET</text>
       <text class="half-label" data-team="away" x="150" y="14" text-anchor="middle" font-size="11" fill="var(--text-dim)" font-family="Consolas, monospace"></text>
-      <text class="half-label" data-team="home" x="150" y="${TOTAL_H - 6}" text-anchor="middle" font-size="11" fill="var(--text-dim)" font-family="Consolas, monospace"></text>
+      <text class="half-label" data-team="home" x="150" y="${SVG_H - 6}" text-anchor="middle" font-size="11" fill="var(--text-dim)" font-family="Consolas, monospace"></text>
       <g class="court-zone-cells">${zoneCells('away')}${zoneCells('home')}</g>
       ${zoneLabels('away')}${zoneLabels('home')}
       <g class="court-trails" pointer-events="none"></g>
@@ -136,10 +172,11 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
     return { x: p.x + off[0], y: p.y + off[1] };
   }
 
-  // A generic point at the net on `team`'s own side, used as the arrow's
-  // start when a cross-net action didn't record an explicit origin zone.
+  // A generic point at the net on `team`'s own side, used as the Attack
+  // arrow's start when a cross-net action didn't record an explicit
+  // origin zone. Serve never uses this — see serveOriginPoint.
   function netEdgePoint(team) {
-    return { x: 150, y: team === 'home' ? HALF_H + NET_GAP + 30 : HALF_H - 30 };
+    return { x: 150, y: team === 'home' ? SERVE_ZONE + HALF_H + NET_GAP + 30 : SERVE_ZONE + HALF_H - 30 };
   }
 
   function targetPoint(a) {
@@ -148,7 +185,11 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster }) {
     return pointInHalf(half, a.zone, a.subzone);
   }
 
+  // Serve always originates behind the server's own baseline, never
+  // inside the zone grid — even when a from-zone was typed, unlike
+  // every other skill, where a from-zone marks a point inside the court.
   function originPoint(a) {
+    if (a.skill === 'S') return serveOriginPoint(a);
     if (a.fromZone) return pointInHalf(a.team, a.fromZone, a.fromSubzone);
     if (CROSS_NET_SKILLS[a.skill]) return netEdgePoint(a.team);
     return null;

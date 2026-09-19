@@ -26,10 +26,16 @@ import { COURT_ZONES, SKILLS, SKILL_ORDER, evalLabel } from '../scouting/codes.j
 // within the acting team's own court, so its zone (and any `from`
 // zone) stays inside that team's own half.
 //
-// The 18 zone cells are clickable — click inserts that cell's zone (and
-// its quadrant, from where in the cell you click) into the Rally Line
-// textbox at the cursor, the same "point at where it landed" workflow
-// openvolley's ovscout2 uses on a video frame, applied to this diagram.
+// The 18 zone cells are clickable — a single click inserts that cell's
+// zone (and its quadrant, from where in the cell you click) into the
+// Rally Line textbox at the cursor, the same "point at where it
+// landed" workflow openvolley's ovscout2 uses on a video frame, applied
+// to this diagram. A press-drag from one cell to a different one, or
+// (with the "2-click" toggle on) two separate clicks, inserts a full
+// origin+target segment instead of a single zone — the same start/end
+// trajectory the rally line's <origin>> or <origin>- syntax already
+// supports, drawn instead of typed. Dragging always works; the toggle
+// only changes what a same-cell press+release (an ordinary click) does.
 //
 // The diagram only ever shows the rally currently being reviewed, not a
 // trail accumulated across the whole match: RallyCommitter.onCommit
@@ -101,7 +107,8 @@ function serveOriginPoint(a) {
 export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster, rallyCommitter }) {
   root.innerHTML = `
     <div class="panel-header">
-      <span>Court Visualizer <span class="viz-caption">click a zone to insert it</span></span>
+      <span>Court Visualizer <span class="viz-caption">click a zone, or drag from one zone to another</span></span>
+      <button type="button" class="viz-mode-toggle" aria-pressed="false">2-click trajectory: Off</button>
     </div>
     <svg class="court-svg" viewBox="0 0 300 ${SVG_H}" role="img" aria-label="Volleyball court target-zone diagram, both teams, with serve zones behind each baseline">
       <defs>
@@ -125,15 +132,19 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster, rall
       ${zoneLabels('away')}${zoneLabels('home')}
       <g class="court-trails" pointer-events="none"></g>
       <g class="court-markers" pointer-events="none"></g>
+      <g class="court-input-preview" pointer-events="none"></g>
     </svg>
     <div class="viz-legend"></div>
     <div class="viz-empty">Click a cell to insert its zone into the rally line.</div>
   `;
 
+  const svg = root.querySelector('.court-svg');
   const markersLayer = root.querySelector('.court-markers');
   const trailsLayer = root.querySelector('.court-trails');
+  const previewLayer = root.querySelector('.court-input-preview');
   const legend = root.querySelector('.viz-legend');
   const empty = root.querySelector('.viz-empty');
+  const modeToggle = root.querySelector('.viz-mode-toggle');
 
   // Index into actionLog.list() where the current rally's own actions
   // begin. Reset on every commit (before its actions are added) so the
@@ -148,20 +159,114 @@ export function mountVisualizerPanel(root, { actionLog, rallyPanel, roster, rall
   }
 
   // Cells carry fixed team + row/col; the zone number they represent
-  // comes straight from that team's own grid, so clicking a cell always
-  // inserts the number actually printed on it.
-  root.querySelector('.court-zone-cells').addEventListener('click', (e) => {
+  // comes straight from that team's own grid, so a click/drag on a
+  // cell always resolves to the number actually printed on it.
+  function cellInfoFromEvent(e) {
     const cell = e.target.closest('.zone-cell');
-    if (!cell) return;
+    if (!cell) return null;
     const team = cell.dataset.team;
     const row = Number(cell.dataset.row), col = Number(cell.dataset.col);
     const zone = gridFor(team)[row][col];
     const rect = cell.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
-    // Quadrant of the clicked cell: a=near-left, b=near-right, c=far-left, d=far-right.
+    // Quadrant of the cell: a=near-left, b=near-right, c=far-left, d=far-right.
     const subzone = py < 0.5 ? (px < 0.5 ? 'a' : 'b') : (px < 0.5 ? 'c' : 'd');
-    rallyPanel.insertAtCursor(String(zone) + subzone);
+    return { team, row, col, zone, subzone };
+  }
+
+  function sameCell(a, b) {
+    return !!a && !!b && a.team === b.team && a.row === b.row && a.col === b.col;
+  }
+
+  function findCellEl(info) {
+    return root.querySelector(`.zone-cell[data-team="${info.team}"][data-row="${info.row}"][data-col="${info.col}"]`);
+  }
+
+  // Converts a mouse event's screen position into the SVG's own user
+  // space, accounting for however the viewBox is currently scaled —
+  // needed for the live drag-preview line to track the cursor accurately.
+  function svgPointFromEvent(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    const p = pt.matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
+  }
+
+  let twoClickMode = false;
+  let dragStart = null;
+  let pendingClickStart = null;
+
+  function clearPendingHighlight() {
+    root.querySelectorAll('.zone-cell-pending').forEach((el) => el.classList.remove('zone-cell-pending'));
+  }
+
+  function cancelPending() {
+    pendingClickStart = null;
+    clearPendingHighlight();
+  }
+
+  modeToggle.addEventListener('click', () => {
+    twoClickMode = !twoClickMode;
+    cancelPending();
+    modeToggle.textContent = `2-click trajectory: ${twoClickMode ? 'On' : 'Off'}`;
+    modeToggle.setAttribute('aria-pressed', String(twoClickMode));
+  });
+
+  // A same-cell press+release is an ordinary click: in the default
+  // mode it inserts that single zone (unchanged); with 2-click mode on,
+  // the first click drops a pending start (highlighted) and the second
+  // completes the pair, the click-driven counterpart to a drag.
+  function handlePlainClick(info) {
+    if (!twoClickMode) {
+      rallyPanel.insertAtCursor(String(info.zone) + info.subzone);
+      return;
+    }
+    if (!pendingClickStart) {
+      pendingClickStart = info;
+      findCellEl(info)?.classList.add('zone-cell-pending');
+      return;
+    }
+    const start = pendingClickStart;
+    const wasSameCell = sameCell(start, info);
+    cancelPending();
+    if (wasSameCell) return; // clicking the pending cell again cancels it
+    rallyPanel.insertZonePair(start.zone, start.subzone, info.zone, info.subzone);
+  }
+
+  function onDocMouseMove(e) {
+    if (!dragStart) return;
+    const from = pointInHalf(dragStart.team, dragStart.zone, dragStart.subzone);
+    const to = svgPointFromEvent(e);
+    if (!from) return;
+    previewLayer.innerHTML = `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3" opacity="0.85"/>`;
+  }
+
+  function onDocMouseUp(e) {
+    document.removeEventListener('mousemove', onDocMouseMove);
+    previewLayer.innerHTML = '';
+    const start = dragStart;
+    dragStart = null;
+    if (!start) return;
+    const end = cellInfoFromEvent(e);
+    if (end && !sameCell(start, end)) {
+      rallyPanel.insertZonePair(start.zone, start.subzone, end.zone, end.subzone);
+      return;
+    }
+    // No real drag (released on the same cell, or off the court entirely
+    // — treat that as "same cell" too, i.e. a plain click on the start).
+    handlePlainClick(start);
+  }
+
+  root.querySelector('.court-zone-cells').addEventListener('mousedown', (e) => {
+    const info = cellInfoFromEvent(e);
+    if (!info) return;
+    dragStart = info;
+    document.addEventListener('mousemove', onDocMouseMove);
+    document.addEventListener('mouseup', onDocMouseUp, { once: true });
   });
 
   function zoneCenter(team, zone) {

@@ -128,10 +128,32 @@ export function mountRallyPanel(root, { rallyCommitter, roster }) {
     renderPreview();
   }
 
+  // Sniffs the skill letter of the token currently being typed (the
+  // word the cursor sits in, using the same ';'/whitespace tokenizer as
+  // rallyParser.js) so a court drag/click-pair can pick the right
+  // separator — "-" for a serve's start-end, ">" for everything else's
+  // from>to — without the court needing to track skill state itself.
+  function currentSkillAtCursor() {
+    const pos = input.selectionStart ?? input.value.length;
+    const before = input.value.slice(0, pos);
+    const tokenStart = Math.max(before.lastIndexOf(';'), before.lastIndexOf(' ')) + 1;
+    const token = before.slice(tokenStart);
+    const m = /^[HA]\d{1,2}([SREABDF])/i.exec(token);
+    return m ? m[1].toUpperCase() : null;
+  }
+
+  // Inserts a full origin+target zone segment at the cursor, used by a
+  // court drag or click-to-start/click-to-end gesture (see
+  // visualizerPanel.js) — the two-point counterpart to insertAtCursor's
+  // single-zone click.
+  function insertZonePair(fromZone, fromSubzone, zone, subzone) {
+    insertAtCursor(formatZoneSegment(fromZone, fromSubzone, zone, subzone, currentSkillAtCursor()));
+  }
+
   roster.onChange(renderPreview);
   renderPreview();
 
-  return { insertAtCursor };
+  return { insertAtCursor, insertZonePair };
 }
 
 function evalClass(char) {

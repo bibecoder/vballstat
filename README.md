@@ -65,10 +65,18 @@ or, equivalently, `python3 -m http.server 8000`.
    **Click to assist typing** instead of typing every character:
    clicking a roster player inserts their `H13`-style token at the
    cursor; clicking a zone on the Court Visualizer inserts that zone
-   (and its quadrant, based on where in the cell you click). A collapsed
-   "Show code reference" panel under the input recaps the full code
-   table for new users. `Ctrl+Z` undoes the last committed action from
-   anywhere.
+   (and its quadrant, based on where in the cell you click). **Dragging**
+   from one zone to another inserts a full origin+target segment in one
+   motion (e.g. `4a-5d` or `4a>5d`, the right separator picked
+   automatically from whatever skill letter you've already typed on
+   that token) instead of just the target — the same trajectory the
+   `<origin>` syntax supports, drawn instead of typed. The "2-click
+   trajectory" toggle above the diagram switches a plain click into a
+   two-step version of the same thing: click once to drop a start point
+   (shown highlighted), click again to complete it; clicking that same
+   pending cell again cancels it. A collapsed "Show code reference"
+   panel under the input recaps the full code table for new users.
+   `Ctrl+Z` undoes the last committed action from anywhere.
 
 4. **Read the court visualizer.** One diagram shows both teams' courts
    at once, net in the middle — Away's zone grid above it (pre-rotated
